@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ TaskAgent — Mohammed</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #08080d; color: #ccc; font-family: 'Outfit', sans-serif; }
+        input, textarea, select, button { font-family: inherit; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes pulse { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
+        
+        .setup-overlay {
+            position: fixed; inset: 0; background: #08080dee; z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .setup-card {
+            background: #0f0f18; border: 1px solid #1a1a28; border-radius: 16px;
+            padding: 32px; max-width: 460px; width: 90%;
+        }
+        .setup-card h2 { color: #fff; margin-bottom: 6px; font-size: 20px; }
+        .setup-card > p { color: #666; font-size: 13px; margin-bottom: 20px; line-height: 1.5; }
+        .setup-card label { display: block; color: #888; font-size: 12px; margin-bottom: 6px; }
+        .setup-card input, .setup-card select {
+            width: 100%; background: #08080d; border: 1px solid #1a1a28; border-radius: 8px;
+            padding: 10px 12px; color: #ddd; font-size: 14px; margin-bottom: 12px; outline: none;
+        }
+        .setup-card input:focus, .setup-card select:focus { border-color: #e94560; }
+        .setup-card button {
+            background: #e94560; color: #fff; border: none; border-radius: 8px;
+            padding: 10px 24px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%;
+        }
+        .setup-card button:hover { opacity: 0.9; }
+        .setup-card a { color: #e94560; text-decoration: none; }
+        .setup-card .skip-link { color: #555; font-size: 12px; margin-top: 12px; text-align: center; cursor: pointer; }
+        .setup-card .skip-link:hover { color: #888; }
+        
+        .model-cards { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 16px; }
+        .model-card {
+            background: #08080d; border: 2px solid #1a1a28; border-radius: 10px;
+            padding: 14px 10px; text-align: center; cursor: pointer; transition: all 0.2s;
+        }
+        .model-card:hover { border-color: #333; }
+        .model-card.selected { border-color: #e94560; background: #1a0a10; }
+        .model-card h4 { color: #fff; font-size: 14px; margin-bottom: 4px; }
+        .model-card p { font-size: 11px; color: #666; margin: 0; }
+        .api-info {
+            background: #0a0a12; border-radius: 8px; padding: 10px; margin-bottom: 12px;
+            font-size: 12px; color: #666; line-height: 1.5;
+        }
+        .api-info a { color: #e94560; }
+        .model-badge {
+            display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px;
+            font-weight: 600; margin-left: 8px;
+        }
+        .model-badge.openai { background: #10b98130; color: #10b981; }
+        .model-badge.mistral { background: #ff6b6b30; color: #ff6b6b; }
+        .model-badge.claude { background: #ff9f1c30; color: #ff9f1c; }
+        .model-badge.grok { background: #8b5cf630; color: #a78bfa; }
+        
+        .task-desc-btn {
+            background: none; border: none; color: #555; cursor: pointer; 
+            font-size: 12px; padding: 2px 6px; border-radius: 4px; margin-left: 4px;
+        }
+        .task-desc-btn:hover { background: #1a1a28; color: #e94560; }
+        
+        .task-desc-panel {
+            margin-top: 8px; padding: 10px; background: #08080d; border-radius: 6px;
+            font-size: 12px; color: #888; line-height: 1.5; border-left: 2px solid #333;
+        }
+        .task-desc-panel .edit-desc {
+            width: 100%; background: #0c0c14; border: 1px solid #1a1a28; border-radius: 6px;
+            padding: 8px; color: #ddd; font-size: 12px; margin-top: 8px; resize: vertical; min-height: 60px;
+        }
+        .task-desc-panel button {
+            background: #e94560; border: none; border-radius: 6px; padding: 6px 12px;
+            color: #fff; font-size: 11px; cursor: pointer; margin-top: 6px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const CATEGORIES = [
+            { id: "fedia", label: "FedIA", color: "#e94560", icon: "🧠" },
+            { id: "cours", label: "Cours", color: "#0ea5e9", icon: "📚" },
+            { id: "alternance", label: "Alternance", color: "#8b5cf6", icon: "💼" },
+            { id: "ecole", label: "École/Candidature", color: "#ec4899", icon: "🎓" },
+            { id: "perso", label: "Perso", color: "#10b981", icon: "🏠" },
+            { id: "admin", label: "Admin", color: "#f59e0b", icon: "📄" },
+            { id: "sport", label: "Sport", color: "#06b6d4", icon: "💪" },
+            { id: "sante", label: "Santé", color: "#ef4444", icon: "❤️" },
+            { id: "travail", label: "Travail", color: "#6366f1", icon: "💻" },
+            { id: "projet", label: "Projet", color: "#f97316", icon: "🚀" },
+            { id: "finance", label: "Finance", color: "#84cc16", icon: "💰" },
+            { id: "autre", label: "Autre", color: "#6b7280", icon: "📌" },
+        ];
+
+        const PRIORITIES = [
+            { id: "haute", label: "Haute", color: "#ef4444" },
+            { id: "moyenne", label: "Moyenne", color: "#f59e0b" },
+            { id: "basse", label: "Basse", color: "#10b981" },
+        ];
+
+        const genId = () => Math.random().toString(36).slice(2, 8);
+        const todayStr = () => new Date().toISOString().split("T")[0];
+        const fmtDate = (d) => {
+            if (!d) return "";
+            return new Date(d + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+        };
+        const daysUntil = (dl) => {
+            const now = new Date(todayStr() + "T00:00:00");
+            const d = new Date(dl + "T00:00:00");
+            return Math.round((d - now) / 86400000);
+        };
+
+        const store = {
+            get: (k) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } },
+            set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+        };
+
+        const SYSTEM_PROMPT = `Tu es l'assistant de tâches intégré dans l'app TaskAgent de Mohammed. Tu parles en français informel comme un pote. RÔLE: L'utilisateur te parle naturellement pour gérer ses tâches. Tu dois: 1. Comprendre ce qu'il veut (ajouter, modifier, supprimer, compléter, lister, analyser) 2. Répondre de façon conversationnelle ET retourner des actions structurées RÈGLES: - Réponds TOUJOURS en JSON valide, rien d'autre - Format: {"message": "ta réponse conversationnelle", "actions": [...]} - Si aucune action: {"message": "ta réponse", "actions": []} ACTIONS DISPONIBLES: - {"type": "add", "task": {"title": "...", "deadline": "YYYY-MM-DD", "priority": "haute|moyenne|basse", "category": "fedia|cours|alternance|ecole|perso|admin|sport|sante|travail|projet|finance|autre", "notes": "..."}} - {"type": "complete", "match": "mot-clé du titre à chercher"} - {"type": "delete", "match": "mot-clé du titre à chercher"} - {"type": "edit", "match": "mot-clé du titre à chercher", "updates": {"title?": "...", "deadline?": "...", "priority?": "...", "notes?": "..."}} INTELLIGENCE: - Si l'utilisateur donne plusieurs tâches d'un coup, crée plusieurs actions "add" - Déduis la catégorie du contexte: école/université/candidature/master = "ecole", rapport/projet FedIA = "fedia", alternance/stage = "alternance", sport = "sport", santé/rdv médical = "sante", travail/boulot = "travail", finances/banque = "finance", cours/TP/examen = "cours", défaut = "autre" - Déduis la priorité (si deadline proche = haute, sinon moyenne) - Si la date est relative ("lundi prochain", "dans 3 jours"), calcule la date absolue. Aujourd'hui: ${todayStr()} - Si l'utilisateur demande "qu'est-ce que je dois faire" ou "mon planning", analyse les tâches et donne un briefing motivant - Ajoute des notes utiles dans "notes" (liens, détails, etc.) - Sois créatif pour les titres des tâches`;
+
+        function SetupOverlay({ onSave, onSkip }) {
+            const [selectedModel, setSelectedModel] = useState("openai");
+            const [apiKey, setApiKey] = useState("");
+
+            return (
+                <div className="setup-overlay">
+                    <div className="setup-card">
+                        <h2>⚡ Configurer TaskAgent</h2>
+                        <p>Choisis ton modèle d'IA et colle ta clé API pour activer le chat intelligent.</p>
+                        
+                        <label>1. Choisis le modèle</label>
+                        <div className="model-cards">
+                            <div className={`model-card ${selectedModel === "openai" ? "selected" : ""}`} onClick={() => setSelectedModel("openai")}>
+                                <h4>🤖 OpenAI</h4>
+                                <p>GPT-4o-mini<br/>Rapide</p>
+                            </div>
+                            <div className={`model-card ${selectedModel === "mistral" ? "selected" : ""}`} onClick={() => setSelectedModel("mistral")}>
+                                <h4>🌊 Mistral</h4>
+                                <p>Mistral Small<br/>Bon marché</p>
+                            </div>
+                            <div className={`model-card ${selectedModel === "claude" ? "selected" : ""}`} onClick={() => setSelectedModel("claude")}>
+                                <h4>🧠 Claude</h4>
+                                <p>Claude 3.5 Haiku<br/>Rapide</p>
+                            </div>
+                            <div className={`model-card ${selectedModel === "grok" ? "selected" : ""}`} onClick={() => setSelectedModel("grok")}>
+                                <h4>🔮 Grok</h4>
+                                <p>Grok 2 mini<br/>Fun & rapide</p>
+                            </div>
+                        </div>
+
+                        <div className="api-info">
+                            {selectedModel === "openai" && (
+                                <>Obtiens ta clé sur <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a><br/>Modèles: GPT-4o-mini (recommander), GPT-4o</>
+                            )}
+                            {selectedModel === "mistral" && (
+                                <>Obtiens ta clé sur <a href="https://console.mistral.ai/api-keys/" target="_blank">console.mistral.ai</a><br/>Utilise "mistral-small-latest"</>
+                            )}
+                            {selectedModel === "claude" && (
+                                <>Obtiens ta clé sur <a href="https://console.anthropic.com/api-keys" target="_blank">console.anthropic.com</a><br/>Utilise "claude-3-5-haiku-20241022"</>
+                            )}
+                            {selectedModel === "grok" && (
+                                <>Obtiens ta clé sur <a href="https://console.x.com/api_keys" target="_blank">console.x.com</a><br/>Utilise "grok-2-1212"</>
+                            )}
+                        </div>
+
+                        <label>2. Colle ta clé API</label>
+                        <input
+                            type="password"
+                            placeholder={selectedModel === "openai" ? "sk-proj-..." : selectedModel === "mistral" ? "api-key..." : selectedModel === "claude" ? "sk-ant-..." : "gsk_..."}
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                        />
+
+                        <button onClick={() => apiKey.trim() && onSave(apiKey.trim(), selectedModel)} disabled={!apiKey.trim()}>
+                            Sauvegarder
+                        </button>
+
+                        <div className="skip-link" onClick={onSkip}>
+                            Utiliser le mode local (sans IA) →
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function App() {
+            const hasApiKey = !!store.get("ta-api-key");
+            const [showSetup, setShowSetup] = useState(!hasApiKey);
+            const [apiKey, setApiKey] = useState(store.get("ta-api-key") || "");
+            const [selectedModel] = useState(store.get("ta-model") || "openai");
+            const [tasks, setTasks] = useState(store.get("ta-tasks") || []);
+            const [messages, setMessages] = useState(store.get("ta-msgs") || []);
+            const [input, setInput] = useState("");
+            const [sending, setSending] = useState(false);
+            const [tab, setTab] = useState("chat");
+            const [filterCat, setFilterCat] = useState("all");
+            const [filterStatus, setFilterStatus] = useState("active");
+            const [toast, setToast] = useState(null);
+            const [showManual, setShowManual] = useState(false);
+            const [manualForm, setManualForm] = useState({ title: "", deadline: "", priority: "moyenne", category: "cours", notes: "" });
+            const [expandedDesc, setExpandedDesc] = useState(null);
+            const [editDesc, setEditDesc] = useState("");
+
+            const chatEndRef = useRef(null);
+            const inputRef = useRef(null);
+
+            const fire = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2800); };
+
+            const saveSetup = (key, model) => {
+                store.set("ta-api-key", key);
+                store.set("ta-model", model);
+                setApiKey(key);
+                setShowSetup(false);
+                fire("✅ Configuré !");
+            };
+
+            const skipSetup = () => {
+                store.set("ta-api-key", null);
+                setShowSetup(false);
+            };
+
+            const persistTasks = (t) => { setTasks(t); store.set("ta-tasks", t); };
+            const persistMsgs = (m) => { setMessages(m); store.set("ta-msgs", m); };
+
+            useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, sending]);
+
+            const applyActions = (actions, currentTasks) => {
+                let t = [...currentTasks];
+                let fb = [];
+                for (const a of actions) {
+                    if (a.type === "add" && a.task) {
+                        t.push({
+                            id: genId(),
+                            title: a.task.title || "Sans titre",
+                            deadline: a.task.deadline || todayStr(),
+                            priority: a.task.priority || "moyenne",
+                            category: a.task.category || "cours",
+                            notes: a.task.notes || "",
+                            done: false,
+                            createdDate: todayStr(),
+                            completedDate: null
+                        });
+                        fb.push(`+ ${a.task.title}`);
+                    } else if (a.type === "complete" && a.match) {
+                        const f = t.find(x => !x.done && x.title.toLowerCase().includes(a.match.toLowerCase()));
+                        if (f) { f.done = true; f.completedDate = todayStr(); fb.push(`✓ ${f.title}`); }
+                    } else if (a.type === "delete" && a.match) {
+                        const i = t.findIndex(x => x.title.toLowerCase().includes(a.match.toLowerCase()));
+                        if (i >= 0) { fb.push(`🗑 ${t[i].title}`); t.splice(i, 1); }
+                    } else if (a.type === "edit" && a.match && a.updates) {
+                        const f = t.find(x => x.title.toLowerCase().includes(a.match.toLowerCase()));
+                        if (f) { Object.assign(f, a.updates); fb.push(`✏️ ${f.title}`); }
+                    }
+                }
+                return { tasks: t, feedback: fb };
+            };
+
+            function parseInput(text) {
+                const actions = [];
+                const msg = text.trim().toLowerCase();
+                const today = todayStr();
+                const addRegex = /(?:(?:ajoute|ajouter|add)\s*)?([\w\s\-']+?)\s*(?:pour|le|à|a|au|avant)?\s*([\w\s\-\/]+)?$/i;
+                const completeRegex = /^(j'ai fini|j'ai terminé|fini|terminé|done|marque (?:comme )?fait|complète|complete)\s*(.*)$/i;
+                const deleteRegex = /^(supprime|delete|enlève|retire)\s*(.*)$/i;
+                const planningRegex = /(planning|qu'est-ce que je dois faire|quelles? tâches|briefing|à faire|à faire\?|quoi faire)/i;
+
+                if (msg.includes("+") || msg.includes(" et ")) {
+                    const parts = msg.split(/\+| et /);
+                    for (const part of parts) {
+                        const m = addRegex.exec(part.trim());
+                        if (m && m[1]) {
+                            actions.push({ type: "add", task: { title: m[1].trim(), deadline: today, priority: "moyenne", category: "cours", notes: "" } });
+                        }
+                    }
+                    return { message: `J'ai ajouté ${actions.length} tâches !`, actions };
+                }
+
+                const addMatch = addRegex.exec(msg);
+                if (addMatch && addMatch[1] && !msg.startsWith("supprime") && !msg.startsWith("fini") && !msg.startsWith("delete") && !msg.startsWith("marque")) {
+                    actions.push({ type: "add", task: { title: addMatch[1].trim(), deadline: today, priority: "moyenne", category: "cours", notes: addMatch[2]?.trim() || "" } });
+                    return { message: `Tâche ajoutée : ${addMatch[1].trim()}`, actions };
+                }
+
+                const compMatch = completeRegex.exec(msg);
+                if (compMatch && compMatch[2]) {
+                    actions.push({ type: "complete", match: compMatch[2].trim() });
+                    return { message: `Tâche marquée comme terminée : ${compMatch[2].trim()}`, actions };
+                }
+
+                const delMatch = deleteRegex.exec(msg);
+                if (delMatch && delMatch[2]) {
+                    actions.push({ type: "delete", match: delMatch[2].trim() });
+                    return { message: `Tâche supprimée : ${delMatch[2].trim()}`, actions };
+                }
+
+                if (planningRegex.test(msg)) {
+                    return { message: `Tu as ${tasks.filter(t=>!t.done).length} tâche(s) en cours, ${tasks.filter(t=>t.done).length} terminée(s).`, actions: [] };
+                }
+
+                return { message: "Je n'ai pas compris, reformule stp !", actions: [] };
+            }
+
+            function parseAIResponse(text) {
+                try {
+                    const jsonMatch = text.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        const parsed = JSON.parse(jsonMatch[0]);
+                        return { message: parsed.message || "OK", actions: parsed.actions || [] };
+                    }
+                } catch {}
+                return { message: text, actions: [] };
+            }
+
+            const callAI = async (text, messageHistory) => {
+                const model = store.get("ta-model") || "openai";
+                const key = store.get("ta-api-key");
+                console.log("callAI - model:", model, "key exists:", !!key);
+                
+                if (!key) return null;
+
+                try {
+                    let endpoint, body;
+                    const conversationHistory = messageHistory.map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content }));
+                    console.log("callAI - calling API with model:", model);
+                    
+                    if (model === "openai") {
+                        endpoint = "https://api.openai.com/v1/chat/completions";
+                        body = {
+                            model: "gpt-4o-mini",
+                            messages: [{ role: "system", content: SYSTEM_PROMPT }, ...conversationHistory, { role: "user", content: text }],
+                            max_tokens: 600,
+                            temperature: 0.7
+                        };
+                    } else if (model === "mistral") {
+                        endpoint = "https://api.mistral.ai/v1/chat/completions";
+                        body = {
+                            model: "mistral-small-latest",
+                            messages: [{ role: "system", content: SYSTEM_PROMPT }, ...conversationHistory, { role: "user", content: text }],
+                            max_tokens: 600,
+                            temperature: 0.7
+                        };
+                    } else if (model === "claude") {
+                        endpoint = "https://api.anthropic.com/v1/messages";
+                        body = {
+                            model: "claude-3-5-haiku-20241022",
+                            max_tokens: 600,
+                            system: SYSTEM_PROMPT,
+                            messages: [...conversationHistory, { role: "user", content: text }]
+                        };
+                        const res = await fetch(endpoint, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+                            body: JSON.stringify(body)
+                        });
+                        if (!res.ok) throw new Error("API error");
+                        const data = await res.json();
+                        return data.content[0].text;
+                    } else {
+                        endpoint = "https://api.x.ai/v1/chat/completions";
+                        body = {
+                            model: "grok-2-1212",
+                            messages: [{ role: "system", content: SYSTEM_PROMPT }, ...conversationHistory, { role: "user", content: text }],
+                            max_tokens: 600,
+                            temperature: 0.7
+                        };
+                    }
+
+                    const res = await fetch(endpoint, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
+                        body: JSON.stringify(body)
+                    });
+
+                    if (!res.ok) throw new Error("API error");
+                    const data = await res.json();
+                    return data.choices[0].message.content;
+                } catch (err) {
+                    console.error("AI error:", err);
+                    console.log("Error type:", err.name, "Message:", err.message);
+                    return null;
+                }
+            };
+
+            const sendMessage = async () => {
+                const text = input.trim();
+                if (!text || sending) return;
+
+                setInput("");
+                setSending(true);
+                const userMsg = { role: "user", content: text, ts: Date.now() };
+                const newMsgs = [...messages, userMsg];
+                setMessages(newMsgs);
+
+                let currentTasks = [...tasks];
+                let feedbackLines = [];
+                let botResponse = "";
+
+                if (apiKey) {
+                    const aiResponse = await callAI(text, newMsgs);
+                    if (aiResponse) {
+                        const parsed = parseAIResponse(aiResponse);
+                        botResponse = parsed.message;
+                        if (parsed.actions?.length > 0) {
+                            const r = applyActions(parsed.actions, currentTasks);
+                            currentTasks = r.tasks;
+                            feedbackLines = r.feedback;
+                        }
+                    } else {
+                        botResponse = "❌ Erreur de connexion à l'IA. Vérifie ta clé API ou le modèle choisi.";
+                        console.log("AI call failed - check console for details");
+                    }
+                } else {
+                    const parsed = parseInput(text);
+                    botResponse = parsed.message;
+                    if (parsed.actions?.length > 0) {
+                        const r = applyActions(parsed.actions, currentTasks);
+                        currentTasks = r.tasks;
+                        feedbackLines = r.feedback;
+                    }
+                }
+
+                persistTasks(currentTasks);
+                const botMsg = { role: "assistant", content: botResponse, ts: Date.now(), actions: feedbackLines };
+                persistMsgs([...newMsgs, botMsg]);
+                if (feedbackLines.length > 0) fire(`⚡ ${feedbackLines.length} action(s) exécutée(s)`);
+                setSending(false);
+                inputRef.current?.focus();
+            };
+
+            const toggleDone = (id) => persistTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done, completedDate: !t.done ? todayStr() : null } : t));
+            const deleteTask = (id) => { persistTasks(tasks.filter(t => t.id !== id)); fire("🗑️ Supprimée"); };
+
+            const addManual = () => {
+                if (!manualForm.title || !manualForm.deadline) { fire("❌ Titre + deadline requis"); return; }
+                persistTasks([...tasks, { id: genId(), ...manualForm, done: false, createdDate: todayStr(), completedDate: null }]);
+                setManualForm({ title: "", deadline: "", priority: "moyenne", category: "cours", notes: "" });
+                setShowManual(false);
+                fire("✅ Tâche ajoutée");
+            };
+
+            const sorted = [...tasks].sort((a, b) => {
+                if (a.done !== b.done) return a.done ? 1 : -1;
+                const pm = { haute: 0, moyenne: 1, basse: 2 };
+                return (daysUntil(a.deadline) + pm[a.priority] * 3) - (daysUntil(b.deadline) + pm[b.priority] * 3);
+            }).filter(t => {
+                if (filterCat !== "all" && t.category !== filterCat) return false;
+                if (filterStatus === "active" && t.done) return false;
+                if (filterStatus === "done" && !t.done) return false;
+                return true;
+            });
+
+            const stats = {
+                late: tasks.filter(t => !t.done && daysUntil(t.deadline) < 0).length,
+                today: tasks.filter(t => !t.done && daysUntil(t.deadline) === 0).length,
+                active: tasks.filter(t => !t.done).length,
+                done: tasks.filter(t => t.done).length,
+            };
+
+            const catOf = (id) => CATEGORIES.find(c => c.id === id) || CATEGORIES[0];
+            const priOf = (id) => PRIORITIES.find(p => p.id === id) || PRIORITIES[1];
+
+            return (
+                <div style={{ maxWidth: 800, margin: "0 auto", padding: "12px 14px", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+                    {showSetup && <SetupOverlay onSave={saveSetup} onSkip={skipSetup} />}
+                    
+                    {toast && (
+                        <div style={{ position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)", background: "#1a1a30", color: "#fff", border: "1px solid #252545", padding: "8px 20px", borderRadius: 10, fontSize: 13, zIndex: 999, boxShadow: "0 8px 30px rgba(0,0,0,0.6)", fontFamily: "'DM Mono', monospace" }}>
+                            {toast}
+                        </div>
+                    )}
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+                        <div>
+                            <h1 style={{ fontSize: 20, fontWeight: 700, color: "#fff", fontFamily: "'DM Mono', monospace" }}>
+                                <span style={{ color: "#e94560" }}>⚡</span> TaskAgent
+                                {apiKey && <span className={`model-badge ${selectedModel}`}>{selectedModel === "openai" ? "🤖 GPT" : selectedModel === "mistral" ? "🌊 Mistral" : selectedModel === "claude" ? "🧠 Claude" : "🔮 Grok"}</span>}
+                                {!apiKey && <span style={{ fontSize: 11, color: "#555", marginLeft: 8 }}>(mode local)</span>}
+                            </h1>
+                            <span style={{ fontSize: 11, color: "#444", fontFamily: "'DM Mono', monospace" }}>
+                                {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                            </span>
+                        </div>
+                        <div style={{ display: "flex", gap: 0, background: "#0f0f16", borderRadius: 8, border: "1px solid #1a1a25", overflow: "hidden" }}>
+                            {["chat", "board"].map(t => (
+                                <button key={t} onClick={() => setTab(t)} style={{ padding: "7px 16px", background: tab === t ? "#1a1a28" : "transparent", border: "none", color: tab === t ? "#e94560" : "#555", fontSize: 13, cursor: "pointer", fontWeight: tab === t ? 600 : 500 }}>
+                                    {t === "chat" ? "💬 Chat" : "📋 Board"}
+                                </button>
+                            ))}
+                            <button onClick={() => setShowSetup(true)} style={{ padding: "7px 12px", background: "transparent", border: "none", color: "#333", fontSize: 13, cursor: "pointer" }} title="Settings">⚙️</button>
+                        </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 6, marginBottom: 12, overflowX: "auto" }}>
+                        {[
+                            { n: stats.late, l: "En retard", c: "#ef4444", i: "⚠️" },
+                            { n: stats.today, l: "Aujourd'hui", c: "#f59e0b", i: "🔥" },
+                            { n: stats.active, l: "En cours", c: "#0ea5e9", i: "📌" },
+                            { n: stats.done, l: "Terminées", c: "#10b981", i: "✅" },
+                        ].map((s, i) => (
+                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", background: "#0c0c14", borderRadius: 8, border: `1px solid ${s.c}44`, fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}>
+                                <span style={{ fontSize: 11 }}>{s.i}</span>
+                                <span style={{ color: s.c, fontWeight: 700 }}>{s.n}</span>
+                                <span style={{ color: "#555", fontSize: 10 }}>{s.l}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {tab === "chat" && (
+                        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                            <div style={{ flex: 1, overflowY: "auto", padding: "8px 0", display: "flex", flexDirection: "column", gap: 8, minHeight: 300, maxHeight: "60vh" }}>
+                                {messages.length === 0 && (
+                                    <div style={{ textAlign: "center", padding: "40px 20px" }}>
+                                        <div style={{ fontSize: 36, marginBottom: 8 }}>🤖</div>
+                                        <p style={{ color: "#888", fontSize: 14, lineHeight: 1.6 }}>
+                                            Salut ! Dis-moi tes tâches naturellement.<br/>
+                                            <span style={{ color: "#555" }}>Ex: "ajoute rapport FedIA pour le 10 avril"<br/>"j'ai fini le TP" · "c'est quoi mon planning ?"</span>
+                                        </p>
+                                    </div>
+                                )}
+                                {messages.map((m, i) => (
+                                    <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start", animation: "fadeUp 0.3s ease" }}>
+                                        <div style={m.role === "user" ? { background: "#1a1a30", borderRadius: "14px 14px 4px 14px", padding: "10px 14px", maxWidth: "80%", border: "1px solid #252545" } : { background: "#0f0f18", borderRadius: "14px 14px 14px 4px", padding: "10px 14px", maxWidth: "85%", border: "1px solid #1a1a25" }}>
+                                            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{m.content}</p>
+                                            {m.actions?.length > 0 && (
+                                                <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 3 }}>
+                                                    {m.actions.map((a, j) => (
+                                                        <span key={j} style={{ fontSize: 11, color: "#10b981", fontFamily: "'DM Mono', monospace", padding: "2px 8px", background: "#10b98110", borderRadius: 4 }}>{a}</span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                                {sending && (
+                                    <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                                        <div style={{ background: "#0f0f18", borderRadius: "14px 14px 14px 4px", padding: "10px 14px", border: "1px solid #1a1a25" }}>
+                                            <span style={{ animation: "blink 1s infinite", color: "#888" }}>en train de réfléchir...</span>
+                                        </div>
+                                    </div>
+                                )}
+                                <div ref={chatEndRef} />
+                            </div>
+                            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                                <input ref={inputRef} style={{ flex: 1, background: "#0c0c14", border: "1px solid #1a1a28", borderRadius: 10, padding: "10px 14px", color: "#ddd", fontSize: 14, outline: "none" }} placeholder="Dis-moi tes tâches..." value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()} disabled={sending} />
+                                <button style={{ background: "#e94560", border: "none", borderRadius: 10, width: 44, height: 44, color: "#fff", fontSize: 16, cursor: "pointer", opacity: sending || !input.trim() ? 0.4 : 1 }} onClick={sendMessage} disabled={sending || !input.trim()}>▶</button>
+                            </div>
+                            {messages.length > 0 && (
+                                <button onClick={() => persistMsgs([])} style={{ background: "none", border: "none", color: "#333", fontSize: 11, cursor: "pointer", marginTop: 6, textAlign: "center" }}>Vider le chat</button>
+                            )}
+                        </div>
+                    )}
+
+                    {tab === "board" && (
+                        <div style={{ flex: 1 }}>
+                            <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+                                <button style={{ background: "#e94560", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer" }} onClick={() => setShowManual(!showManual)}>{showManual ? "✕ Annuler" : "+ Ajouter"}</button>
+                                <select style={{ background: "#0c0c14", color: "#888", border: "1px solid #1a1a28", borderRadius: 8, padding: "8px 10px", fontSize: 12, flex: 1, minWidth: 0 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                                    <option value="all">Toutes</option>
+                                    <option value="active">En cours</option>
+                                    <option value="done">Terminées</option>
+                                </select>
+                                <select style={{ background: "#0c0c14", color: "#888", border: "1px solid #1a1a28", borderRadius: 8, padding: "8px 10px", fontSize: 12, flex: 1, minWidth: 0 }} value={filterCat} onChange={e => setFilterCat(e.target.value)}>
+                                    <option value="all">Toutes catégories</option>
+                                    {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+                                </select>
+                            </div>
+
+                            {showManual && (
+                                <div style={{ background: "#0f0f18", border: "1px solid #1a1a28", borderRadius: 10, padding: 14, marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                                    <input style={{ width: "100%", background: "#08080d", border: "1px solid #1a1a28", borderRadius: 8, padding: "8px 10px", color: "#ddd", fontSize: 13, outline: "none" }} placeholder="Titre *" value={manualForm.title} onChange={e => setManualForm({...manualForm, title: e.target.value})} />
+                                    <input type="date" style={{ width: "100%", background: "#08080d", border: "1px solid #1a1a28", borderRadius: 8, padding: "8px 10px", color: "#ddd", fontSize: 13, outline: "none" }} value={manualForm.deadline} onChange={e => setManualForm({...manualForm, deadline: e.target.value})} />
+                                    <textarea style={{ width: "100%", background: "#08080d", border: "1px solid #1a1a28", borderRadius: 8, padding: "8px 10px", color: "#ddd", fontSize: 13, outline: "none", resize: "vertical", minHeight: 60 }} placeholder="Description / Notes (optionnel)" value={manualForm.notes} onChange={e => setManualForm({...manualForm, notes: e.target.value})} />
+                                    <div style={{ display: "flex", gap: 6 }}>
+                                        {PRIORITIES.map(p => (
+                                            <button key={p.id} onClick={() => setManualForm({...manualForm, priority: p.id})} style={{ border: `1px solid ${manualForm.priority === p.id ? p.color : "#333"}`, borderRadius: 6, padding: "4px 10px", fontSize: 11, cursor: "pointer", background: manualForm.priority === p.id ? p.color : "transparent", color: manualForm.priority === p.id ? "#fff" : "#666", fontWeight: 500 }}>{p.label}</button>
+                                        ))}
+                                    </div>
+                                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                        {CATEGORIES.map(c => (
+                                            <button key={c.id} onClick={() => setManualForm({...manualForm, category: c.id})} style={{ border: `1px solid ${manualForm.category === c.id ? c.color : "#333"}`, borderRadius: 6, padding: "4px 10px", fontSize: 11, cursor: "pointer", background: manualForm.category === c.id ? c.color : "transparent", color: manualForm.category === c.id ? "#fff" : "#666", fontWeight: 500 }}>{c.icon} {c.label}</button>
+                                        ))}
+                                    </div>
+                                    <button style={{ background: "#e94560", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer" }} onClick={addManual}>✅ Ajouter</button>
+                                </div>
+                            )}
+
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: "60vh", overflowY: "auto" }}>
+                                {sorted.length === 0 && (
+                                    <div style={{ textAlign: "center", padding: 40, color: "#444" }}>
+                                        <div style={{ fontSize: 36 }}>📭</div>
+                                        <p>Aucune tâche — utilise le chat pour en ajouter !</p>
+                                    </div>
+                                )}
+                                {sorted.map(t => {
+                                    const c = catOf(t.category), p = priOf(t.priority), d = daysUntil(t.deadline);
+                                    const urg = !t.done && d < 0 ? "late" : !t.done && d === 0 ? "today" : !t.done && d === 1 ? "tmrw" : null;
+                                    return (
+                                        <div key={t.id} style={{ display: "flex", alignItems: "flex-start", gap: 10, background: "#0c0c14", borderRadius: 8, padding: "10px 12px", borderLeft: `3px solid ${c.color}`, opacity: t.done ? 0.45 : 1, animation: "slideIn 0.25s ease" }}>
+                                            <button onClick={() => toggleDone(t.id)} style={{ width: 20, height: 20, borderRadius: 5, border: `2px solid ${t.done ? "#10b981" : "#444"}`, background: t.done ? "#10b981" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 11, color: "#fff", fontWeight: 700, flexShrink: 0, marginTop: 2 }}>{t.done && "✓"}</button>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 600, color: "#ddd", textDecoration: t.done ? "line-through" : "none" }}>{t.title}</span>
+                                                    {urg === "late" && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "#ef444418", color: "#ef4444" }}>⚠️ {Math.abs(d)}j retard</span>}
+                                                    {urg === "today" && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "#f59e0b18", color: "#f59e0b" }}>🔥 Aujourd'hui</span>}
+                                                    {urg === "tmrw" && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "#8b5cf618", color: "#8b5cf6" }}>Demain</span>}
+                                                    <button className="task-desc-btn" onClick={() => { setExpandedDesc(expandedDesc === t.id ? null : t.id); setEditDesc(t.notes || ""); }}>
+                                                        {expandedDesc === t.id ? "▲ Masquer" : "📝 Détails"}
+                                                    </button>
+                                                </div>
+                                                <div style={{ display: "flex", gap: 8, marginTop: 4, alignItems: "center", flexWrap: "wrap" }}>
+                                                    <span style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, background: c.color + "18", color: c.color }}>{c.icon} {c.label}</span>
+                                                    <span style={{ fontSize: 11, color: p.color }}>● {p.label}</span>
+                                                    <span style={{ fontSize: 11, color: "#555" }}>📅 {fmtDate(t.deadline)}</span>
+                                                </div>
+                                                {expandedDesc === t.id && (
+                                                    <div className="task-desc-panel">
+                                                        <div>💬 Description / Notes</div>
+                                                        <textarea className="edit-desc" placeholder="Ajoute des notes, détails, liens..." value={editDesc} onChange={e => setEditDesc(e.target.value)} />
+                                                        <button onClick={() => { persistTasks(tasks.map(task => task.id === t.id ? {...task, notes: editDesc} : task)); setExpandedDesc(null); fire("✅ Description sauvegardée"); }}>Sauvegarder</button>
+                                                    </div>
+                                                )}
+                                                {t.notes && expandedDesc !== t.id && <p style={{ fontSize: 12, color: "#555", margin: "4px 0 0" }}>{t.notes}</p>}
+                                            </div>
+                                            <button onClick={() => deleteTask(t.id)} style={{ background: "none", border: "none", color: "#333", cursor: "pointer", fontSize: 14, padding: "2px 6px" }}>✕</button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+</body>
+
+</html>
