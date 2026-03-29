@@ -11,7 +11,7 @@
 ### Gestion de Tâches
 - ✅ Ajouter, modifier, supprimer, compléter des tâches
 - 📅 Dates limites avec calcul automatique (aujourd'hui, demain, en retard)
-- 🏷️ Catégories multiples : FedIA, Cours, Alternance, École, Sport, Santé, Travail, Projet, Finance, Perso, Admin, Autre
+- 🏷️ Catégories multiples : , Cours, Alternance, École, Sport, Santé, Travail, Projet, Finance, Perso, Admin, Autre
 - ⚡ Priorités : Haute, Moyenne, Basse
 - 📝 Description/Notes pour chaque tâche
 - 🔍 Filtres par catégorie et statut
